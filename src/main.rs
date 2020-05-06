@@ -1,34 +1,60 @@
 #[macro_use]
 extern crate clap;
-use actix_web::{web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{web, App, Error, HttpRequest, HttpResponse, HttpServer, Responder};
+use actix_web_actors::ws;
 
 #[macro_use]
 extern crate serde_derive;
 
+#[macro_use]
+extern crate diesel;
+
+extern crate dotenv;
+
+mod db;
+use db::*;
+mod myws;
+pub mod pmodels;
+
 async fn index() -> impl Responder {
-     let mut medi_index: Vec<CreateMedicine> = Vec::new();
-     medi_index.push(CreateMedicine {
-          name: String::from("abc"),
-          price: 1,
-          id: Some(String::from("iiiiid")),
-          desc: None,
-          tags: None,
-     });
+     // let mut medi_index: Vec<CreateMedicine> = Vec::new();
+     // medi_index.push(CreateMedicine {
+     //      title: String::from("abc"),
+     //      price: 1,
+     //      id: Some(String::from("iiiiid")),
+     //      descr: None,
+     //      tags: None,
+     // });
+     let medi_index = get_medicines();
+
      HttpResponse::Ok().json(medi_index)
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 struct CreateMedicine {
      id: Option<String>,
-     name: String,
-     desc: Option<String>,
-     price: u64,
+     title: String,
+     descr: Option<String>,
+     price: i32,
      tags: Option<Vec<String>>,
 }
 
 async fn create_medicine(medicine: web::Json<CreateMedicine>) -> impl Responder {
      println!("{:?}", medicine);
-     HttpResponse::Ok().body("ook")
+     let result = create_med(medicine.0.title.as_ref(), medicine.0.price);
+     HttpResponse::Ok().body(result)
+}
+
+async fn publish_medicine(path: web::Path<String>) -> impl Responder {
+     let result = publish_med(path.to_string());
+     HttpResponse::Ok().json(result)
+}
+
+async fn medicine_ws(r: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error> {
+     println!("{:?}", r);
+     let res = ws::start(myws::MyWebSocket::new(), &r, stream);
+     println!("{:?}", res);
+     res
 }
 
 #[actix_rt::main]
@@ -59,6 +85,8 @@ async fn main() -> std::io::Result<()> {
           App::new()
                .route("/medicine", web::get().to(index))
                .route("/medicine", web::post().to(create_medicine))
+               .route("/medicine/{id}", web::put().to(publish_medicine))
+               .route("/medicine/ws/", web::get().to(medicine_ws))
      })
      .bind("127.0.0.1:8088")?
      .run()

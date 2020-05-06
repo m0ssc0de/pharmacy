@@ -1,0 +1,69 @@
+syntax = "proto3";
+
+package snazzy.items;
+
+// A snazzy new shirt!
+message Shirt {
+    enum Size {
+        SMALL = 0;
+        MEDIUM = 1;
+        LARGE = 2;
+    }
+
+    string color = 1;
+    Size size = 2;
+}
+
+message Author {
+    enum Rank {
+        STAR0 = 0;
+        STAR1 = 1;
+        STAR2 = 2;
+        STAR3 = 3;
+        STAR4 = 4;
+        STAR5 = 5;
+    }
+    string id = 1;
+    string code = 2;
+    string name = 3;
+    string email = 4;
+    Rank rank = 5;
+}
+
+message Medicine {
+    string id = 1;
+    string name = 2;
+    string description = 3;
+    Author author = 4;
+    string tag = 5;
+}
+
+message Treat {
+    enum Status {
+        UNPAID = 0;
+        ACTIVE = 1;
+        UNACTIVE = 2;
+    }
+    Medicine medicine = 1;
+    Status status = 2;
+}
+
+message SubmitResult {
+    enum Status {
+        REJECTED = 0;
+        ACCEPTED = 1;
+    }
+    Medicine medicine = 1;
+    Status status = 2;
+}
+
+message ServerResponse {
+    oneof response {
+        Medicine medicine = 1;
+        Treat treat = 2;
+    }
+}
+
+message ServerResponses {
+    repeated ServerResponse result = 1;
+}
