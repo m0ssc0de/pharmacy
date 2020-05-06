@@ -2,12 +2,33 @@
 extern crate clap;
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 
+#[macro_use]
+extern crate serde_derive;
+
 async fn index() -> impl Responder {
-     HttpResponse::Ok().body("Hello world!")
+     let mut medi_index: Vec<CreateMedicine> = Vec::new();
+     medi_index.push(CreateMedicine {
+          name: String::from("abc"),
+          price: 1,
+          id: Some(String::from("iiiiid")),
+          desc: None,
+          tags: None,
+     });
+     HttpResponse::Ok().json(medi_index)
 }
 
-async fn index2() -> impl Responder {
-     HttpResponse::Ok().body("Hello world again!")
+#[derive(Debug, Deserialize, Serialize)]
+struct CreateMedicine {
+     id: Option<String>,
+     name: String,
+     desc: Option<String>,
+     price: u64,
+     tags: Option<Vec<String>>,
+}
+
+async fn create_medicine(medicine: web::Json<CreateMedicine>) -> impl Responder {
+     println!("{:?}", medicine);
+     HttpResponse::Ok().body("ook")
 }
 
 #[actix_rt::main]
@@ -36,8 +57,8 @@ async fn main() -> std::io::Result<()> {
 
      HttpServer::new(|| {
           App::new()
-               .route("/", web::get().to(index))
-               .route("/again", web::get().to(index2))
+               .route("/medicine", web::get().to(index))
+               .route("/medicine", web::post().to(create_medicine))
      })
      .bind("127.0.0.1:8088")?
      .run()
