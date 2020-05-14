@@ -38,6 +38,10 @@ message Medicine {
     string tag = 5;
 }
 
+message Medicines {
+    repeated Medicine medicines = 1;
+}
+
 message Treat {
     enum Status {
         UNPAID = 0;
@@ -48,22 +52,53 @@ message Treat {
     Status status = 2;
 }
 
+message Treats {
+    repeated Treat treats = 1;
+}
+
 message SubmitResult {
     enum Status {
         REJECTED = 0;
         ACCEPTED = 1;
     }
-    Medicine medicine = 1;
-    Status status = 2;
-}
-
-message ServerResponse {
-    oneof response {
+    oneof ref {
         Medicine medicine = 1;
         Treat treat = 2;
     }
+    Status status = 3;
 }
 
-message ServerResponses {
-    repeated ServerResponse result = 1;
+message ServerMessage {
+    oneof message {
+        Medicine medicine = 1;
+        Treat treat = 2;
+        Medicines medicines = 3;
+        Treats treats = 4;
+        SubmitResult result = 5;
+    }
+}
+
+message Query {
+    enum QueryType {
+        ALLMEDICINE = 0;
+        ALLTREAT = 1;
+    }
+    QueryType query_type = 1;
+}
+
+message Submit {
+    enum SubType {
+        BUYMEDICINE = 0;
+        BUYTREAT = 1;
+    }
+    SubType subtype = 1;
+    uint64 the_number = 2;
+    string p1 = 3;
+}
+
+message ClientMessage {
+    oneof message {
+        Query query = 1;
+        Submit submit = 2;
+    }
 }

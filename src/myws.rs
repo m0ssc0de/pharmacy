@@ -41,8 +41,8 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWebSocket {
             // Ok(ws::Message::Text(text)) => ctx.text(text),
             // Ok(ws::Message::Text(text)) => ctx.text(self.handle_text(&text)),
             Ok(ws::Message::Text(_)) => ctx.binary(self.new_binary()),
-            // Ok(ws::Message::Binary(bin)) => ctx.binary(bin),
-            Ok(ws::Message::Binary(bin)) => ctx.binary(self.handle_binary(bin.to_vec())),
+            Ok(ws::Message::Binary(bin)) => ctx.binary(bin),
+            // Ok(ws::Message::Binary(bin)) => ctx.binary(self.handle_binary(bin.to_vec())),
             Ok(ws::Message::Close(_)) => {
                 ctx.stop();
             }
@@ -69,13 +69,13 @@ impl MyWebSocket {
         v
     }
 
-    fn handle_text<'a>(&self, t: &'a str) -> &'a str {
-        match t {
-            "ok\n" => "great",
-            "thanks\n" => "welcome",
-            _ => t,
-        }
-    }
+    // fn handle_text<'a>(&self, t: &'a str) -> &'a str {
+    //     match t {
+    //         "ok\n" => "great",
+    //         "thanks\n" => "welcome",
+    //         _ => t,
+    //     }
+    // }
 
     /// helper method that sends ping to client every second.
     ///
