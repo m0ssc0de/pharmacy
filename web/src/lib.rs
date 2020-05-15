@@ -1,29 +1,73 @@
 #![recursion_limit = "512"]
 use wasm_bindgen::prelude::*;
 use yew::prelude::*;
+use yew::services;
+use yew::InputData;
 
 struct Model {
     link: ComponentLink<Self>,
     value: i64,
+    access_id: String,
+    access_key: String,
+    instance_level: i64,
+    level_name: String,
+}
+
+impl Model {
+    fn get_level_name(&self) -> String {
+        return String::from(&self.level_name);
+    }
 }
 
 enum Msg {
     AddOne,
     CreatOne,
+    Level(String),
 }
 
 impl Component for Model {
     type Message = Msg;
     type Properties = ();
     fn create(_: Self::Properties, link: ComponentLink<Self>) -> Self {
-        Self { link, value: 0 }
+        Self {
+            link,
+            value: 0,
+            access_id: String::from(""),
+            access_key: String::from(""),
+            instance_level: 2,
+            level_name: String::from("Better"),
+        }
     }
 
     fn update(&mut self, msg: Self::Message) -> ShouldRender {
+        println!("msg");
+        let mut ys = services::console::ConsoleService::new();
+
         match msg {
-            Msg::AddOne => self.value += 1,
-            _ => println!("TODO"),
+            Msg::AddOne => {
+                ys.log("AddOne");
+                self.value += 1;
+                self.level_name = match self.instance_level {
+                    1 => String::from("Good"),
+                    2 => String::from("Better"),
+                    3 => String::from("Best"),
+                    _ => String::from("Bad Guy!"),
+                };
+            }
+            Msg::CreatOne => {
+                ys.log("CreatOne");
+            }
+            Msg::Level(i) => {
+                ys.log(&format!("Level {}", i));
+                match i.as_str() {
+                    "1" => self.level_name = String::from("Good"),
+                    "2" => self.level_name = String::from("Better"),
+                    "3" => self.level_name = String::from("Best"),
+                    _ => self.level_name = String::from("Bad Guy"),
+                }
+            }
         }
+        ys.log("to return true");
         true
     }
 
@@ -51,31 +95,32 @@ impl Component for Model {
                                 <div class="uk-text-center uk-card-body">
                                     {"Do you want a tomato after 1 hour work?"}<br /> {"Let's get details."}
                                     <br />
+                                    {String::from(&self.level_name)}
                                 </div>
                             </div>
                         </div>
                         <h1 class="uk-heading-divider"></h1>
-                        <div class="uk-card uk-card-default uk-card-hover uk-card-body">
-                            <div class="uk-grid uk-child-width-1-1">
-                                <div>
-                                    <div class="uk-text-center uk-card-body uk-margin-small-top">
-                                        {"Input your Access ID and Key."}
-                                    </div>
-                                </div>
-                                <div>
-                                    <div class="uk-grid uk-child-width-1-2">
-                                        <label class="uk-text-large">{"Access ID"}</label>
-                                        <input class="uk-input uk-width-1-2" type="text" placeholder="as;ldkf;lk" />
-                                    </div>
-                                </div>
-                                <div>
-                                    <div class="uk-grid uk-child-width-1-2">
-                                        <label class="uk-text-large">{"Access Key"}</label>
-                                        <input class="uk-input uk-width-1-2" type="text" placeholder="as;ldkf;lk" />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        // <div class="uk-card uk-card-default uk-card-hover uk-card-body">
+                        //     <div class="uk-grid uk-child-width-1-1">
+                        //         <div>
+                        //             <div class="uk-text-center uk-card-body uk-margin-small-top">
+                        //                 {"Input your Access ID and Key."}
+                        //             </div>
+                        //         </div>
+                        //         <div>
+                        //             <div class="uk-grid uk-child-width-1-2">
+                        //                 <label class="uk-text-large">{"Access ID"}</label>
+                        //                 <input class="uk-input uk-width-1-2" value={&self.access_id} type="text" placeholder="as;ldkf;lk" />
+                        //             </div>
+                        //         </div>
+                        //         <div>
+                        //             <div class="uk-grid uk-child-width-1-2">
+                        //                 <label class="uk-text-large">{"Access Key"}</label>
+                        //                 <input class="uk-input uk-width-1-2" value={&self.access_key} type="text" placeholder="as;ldkf;lk" />
+                        //             </div>
+                        //         </div>
+                        //     </div>
+                        // </div>
                         <h1 class="uk-heading-divider"></h1>
                         <div class="uk-card uk-card-default uk-card-hover uk-card-body uk-height-max-large">
                             <div class="uk-grid uk-child-width-1-2">
@@ -86,8 +131,10 @@ impl Component for Model {
                                 </select>
                             </div>
                             <div class="uk-grid uk-child-width-1-2">
-                                <label class="uk-text-large">{"Good"}</label>
-                                <input class="uk-range" type="range" value="2" min="1" max="3" step="1" />
+                                <label class="uk-text-large">
+                                    {self.get_level_name()}
+                                </label>
+                                <input class="uk-range" oninput=self.link.callback(|i: InputData| Msg::Level(i.value)) type="range" min="1" max="3" step="1" />
                             </div>
                             <br />
                             // <div class="uk-grid">
