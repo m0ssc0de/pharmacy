@@ -1,7 +1,12 @@
 #[macro_use]
 extern crate clap;
-use actix_web::{web, App, Error, HttpRequest, HttpResponse, HttpServer, Responder};
+use actix_identity::Identity;
+use actix_identity::{CookieIdentityPolicy, IdentityService};
+use actix_web::{middleware, web, App, Error, HttpRequest, HttpResponse, HttpServer, Responder};
 use actix_web_actors::ws;
+use rand::Rng;
+use serde::{Deserialize, Serialize};
+use std::ops::Deref;
 
 #[macro_use]
 extern crate serde_derive;
@@ -50,15 +55,50 @@ async fn publish_medicine(path: web::Path<String>) -> impl Responder {
      HttpResponse::Ok().json(result)
 }
 
-async fn medicine_ws(r: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error> {
+async fn medicine_ws(
+     id: Identity,
+     r: HttpRequest,
+     stream: web::Payload,
+) -> Result<HttpResponse, Error> {
+     if let None = id.identity() {
+          return Ok(HttpResponse::Unauthorized().finish());
+     }
      println!("{:?}", r);
      let res = ws::start(myws::MyWebSocket::new(), &r, stream);
      println!("{:?}", res);
      res
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct LoginParams {
+     name: String,
+     passwd: String,
+}
+
+impl LoginParams {
+     pub fn vali(&self) -> bool {
+          self.name == self.passwd
+     }
+}
+
+// async fn login(params: web::Form<LoginParams>, id: Identity) -> HttpResponse {
+async fn login(params: web::Form<LoginParams>, id: Identity) -> HttpResponse {
+     if params.deref().vali() {
+          id.remember(params.name.to_owned());
+          return HttpResponse::Found().header("location", "/").finish();
+     }
+     HttpResponse::Found().header("location", "/login").finish()
+}
+
+async fn logout(id: Identity) -> HttpResponse {
+     id.forget();
+     HttpResponse::Found().header("location", "/").finish()
+}
+
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
+     std::env::set_var("RUST_LOG", "actix_web=info");
+     env_logger::init();
      let matches = clap_app!(pharmacy =>
           (version: "0.1")
           (author: "m0ssc0de <hi.paul.q@gmail.com>")
@@ -81,8 +121,17 @@ async fn main() -> std::io::Result<()> {
           println!("Printing specify port to listen {}", port);
      }
 
-     HttpServer::new(|| {
+     let private_key = rand::thread_rng().gen::<[u8; 32]>();
+     HttpServer::new(move || {
           App::new()
+               .wrap(IdentityService::new(
+                    CookieIdentityPolicy::new(&private_key)
+                         .name("auth-example")
+                         .secure(false),
+               ))
+               .wrap(middleware::Logger::default())
+               .route("/log1n", web::post().to(login))
+               .route("/log0ut", web::post().to(logout))
                .route("/medicine", web::get().to(index))
                .route("/medicine", web::post().to(create_medicine))
                .route("/medicine/{id}", web::put().to(publish_medicine))
