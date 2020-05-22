@@ -1,12 +1,15 @@
 #![recursion_limit = "512"]
 use failure::Error;
 use wasm_bindgen::prelude::*;
+use yew::format::Json;
 use yew::prelude::*;
 use yew::services;
 use yew::services::websocket::{WebSocketService, WebSocketStatus, WebSocketTask};
+use yew::services::ConsoleService;
 use yew::InputData;
 
 pub struct Model {
+    console: ConsoleService,
     link: ComponentLink<Self>,
     ws: Option<WebSocketTask>,
     wss: WebSocketService,
@@ -30,6 +33,8 @@ pub enum Msg {
     Level(String),
     Connect,
     Received(Result<String, Error>), // data received from server
+    Disconnected,
+    Ignore,
 }
 
 impl Component for Model {
@@ -37,6 +42,7 @@ impl Component for Model {
     type Properties = ();
     fn create(_: Self::Properties, link: ComponentLink<Self>) -> Self {
         Self {
+            console: ConsoleService::new(),
             link,
             ws: None,
             wss: WebSocketService::new(),
@@ -50,39 +56,38 @@ impl Component for Model {
     }
 
     fn update(&mut self, msg: Self::Message) -> ShouldRender {
-        println!("msg");
-        let mut ys = services::console::ConsoleService::new();
-
         match msg {
             Msg::Received(Ok(s)) => {
                 self.server_data.push_str(&format!("{}\n", &s));
+                true
             }
             Msg::Received(Err(s)) => {
                 self.server_data.push_str(&format!(
                     "Error when reading data from server: {}\n",
                     &s.to_string()
                 ));
+                true
             }
             Msg::Connect => {
-                // self.console.log("Connecting");
-                // let cbout = self.link.send_back(|Json(data)| Msg::Received(data));
-                // let cbnot = self.link.send_back(|input| {
-                //     ConsoleService::new().log(&format!("Notification: {:?}", input));
-                //     match input {
-                //         WebSocketStatus::Closed | WebSocketStatus::Error => Msg::Disconnected,
-                //         _ => Msg::Ignore,
-                //     }
-                // });
-                // if self.ws.is_none() {
-                //     let task = self
-                //         .wss
-                //         .connect("ws://127.0.0.1:8080/ws/", cbout, cbnot.into());
-                //     self.ws = Some(task);
-                // }
-                // true
+                self.console.log("Connecting");
+                //TODO write the right callback
+                let cbout = self.link.callback(|Json(data)| Msg::Received(data));
+                let cbnot = self.link.callback(|input| {
+                    ConsoleService::new().log(&format!("Notification: {:?}", input));
+                    match input {
+                        WebSocketStatus::Closed | WebSocketStatus::Error => Msg::Disconnected,
+                        _ => Msg::Ignore,
+                    }
+                });
+                if self.ws.is_none() {
+                    let task = self
+                        .wss
+                        .connect("ws://127.0.0.1:8080/ws/", cbout, cbnot.into());
+                    self.ws = Some(task);
+                }
+                true
             }
             Msg::AddOne => {
-                ys.log("AddOne");
                 self.value += 1;
                 self.level_name = match self.instance_level {
                     1 => String::from("Good"),
@@ -90,22 +95,22 @@ impl Component for Model {
                     3 => String::from("Best"),
                     _ => String::from("Bad Guy!"),
                 };
+                true
             }
             Msg::CreatOne => {
-                ys.log("CreatOne");
+                self.console.log("CreateOne");
+                true
             }
             Msg::Level(i) => {
-                ys.log(&format!("Level {}", i));
                 match i.as_str() {
                     "1" => self.level_name = String::from("Good"),
                     "2" => self.level_name = String::from("Better"),
                     "3" => self.level_name = String::from("Best"),
                     _ => self.level_name = String::from("Bad Guy"),
                 }
+                true
             }
         }
-        ys.log("to return true");
-        true
     }
 
     fn change(&mut self, _props: Self::Properties) -> ShouldRender {
