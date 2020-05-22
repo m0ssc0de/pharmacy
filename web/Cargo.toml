@@ -11,5 +11,5 @@ edition = "2018"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-yew = "0.16"
+yew = { version = "0.16", package = "yew-stdweb" }
 wasm-bindgen = "0.2"
