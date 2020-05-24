@@ -1,6 +1,6 @@
 #![recursion_limit = "512"]
 use failure::Error;
-use wasm_bindgen::prelude::*;
+// use wasm_bindgen::prelude::*;
 use yew::format::Json;
 use yew::prelude::*;
 use yew::services;
@@ -57,6 +57,8 @@ impl Component for Model {
 
     fn update(&mut self, msg: Self::Message) -> ShouldRender {
         match msg {
+            Msg::Disconnected => true,
+            Msg::Ignore => true,
             Msg::Received(Ok(s)) => {
                 self.server_data.push_str(&format!("{}\n", &s));
                 true
@@ -71,20 +73,20 @@ impl Component for Model {
             Msg::Connect => {
                 self.console.log("Connecting");
                 //TODO write the right callback
-                let cbout = self.link.callback(|Json(data)| Msg::Received(data));
-                let cbnot = self.link.callback(|input| {
+                let _cbout = self.link.callback(|Json(data)| Msg::Received(data));
+                let _cbnot = self.link.callback(|input| {
                     ConsoleService::new().log(&format!("Notification: {:?}", input));
                     match input {
                         WebSocketStatus::Closed | WebSocketStatus::Error => Msg::Disconnected,
                         _ => Msg::Ignore,
                     }
                 });
-                if self.ws.is_none() {
-                    let task = self
-                        .wss
-                        .connect("ws://127.0.0.1:8080/ws/", cbout, cbnot.into());
-                    self.ws = Some(task);
-                }
+                // if self.ws.is_none() {
+                //     let task = self
+                //         .wss
+                //         .connect("ws://127.0.0.1:8080/ws/", cbout, cbnot.into());
+                //     self.ws = Some(task);
+                // }
                 true
             }
             Msg::AddOne => {
@@ -123,6 +125,9 @@ impl Component for Model {
     fn view(&self) -> Html {
         html! {
             <div>
+            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.4.6/dist/css/uikit.min.css" />
+            <script src="https://cdn.jsdelivr.net/npm/uikit@3.4.6/dist/js/uikit.min.js"></script>
+            <script src="https://cdn.jsdelivr.net/npm/uikit@3.4.6/dist/js/uikit-icons.min.js"></script>
                 <div
                     class="uk-card uk-card-default uk-card-body"
                     style="margin-bottom: 200px; z-index: 980;"
@@ -188,9 +193,4 @@ impl Component for Model {
             </div>
         }
     }
-}
-
-#[wasm_bindgen(start)]
-pub fn run_app() {
-    App::<Model>::new().mount_to_body();
 }
